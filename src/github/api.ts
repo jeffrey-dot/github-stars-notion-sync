@@ -3,9 +3,19 @@ import { Octokit } from "octokit";
 export function createGitHubClient(token: string): Octokit {
   return new Octokit({
     auth: token,
-    userAgent: "github-stars-notion-sync/1.0.0",
     throttle: {
-      enabled: true,
+      onRateLimit: (retryAfter, options) => {
+        console.warn(
+          `⚠️  Rate limit hit. Request quota exhausted for ${options.method} ${options.url}`
+        );
+        return true;
+      },
+      onSecondaryRateLimit: (retryAfter, options) => {
+        console.warn(
+          `⚠️  Secondary rate limit hit. Retrying after ${retryAfter} seconds`
+        );
+        return true;
+      },
     },
   });
 }
