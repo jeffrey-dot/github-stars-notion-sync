@@ -2,17 +2,17 @@ import { Octokit } from "octokit";
 
 export function createGitHubClient(token: string): Octokit {
   return new Octokit({
-    auth: token,
+    auth: token || undefined,
     throttle: {
-      onRateLimit: (retryAfter, options) => {
+      onRateLimit: (_retryAfter: number, options: any) => {
         console.warn(
           `⚠️  Rate limit hit. Request quota exhausted for ${options.method} ${options.url}`
         );
         return true;
       },
-      onSecondaryRateLimit: (retryAfter, options) => {
+      onSecondaryRateLimit: (_retryAfter: number, _options: any) => {
         console.warn(
-          `⚠️  Secondary rate limit hit. Retrying after ${retryAfter} seconds`
+          `⚠️  Secondary rate limit hit. Retrying after ${_retryAfter} seconds`
         );
         return true;
       },
