@@ -1,6 +1,42 @@
 import { Client } from "@notionhq/client";
 import { RepositoryWithRelease } from "../types";
 
+interface PropertyIds {
+  Name: string;
+  Description: string;
+  URL: string;
+  StarredAt: string;
+  LatestRelease: string;
+  ReleaseBody: string;
+  ReleasePublishedAt: string;
+  LastSyncedAt: string;
+}
+
+let cachedPropertyIds: PropertyIds | null = null;
+
+async function getPropertyIds(notion: Client, databaseId: string): Promise<PropertyIds> {
+  if (cachedPropertyIds) {
+    return cachedPropertyIds;
+  }
+
+  const db = await notion.databases.retrieve({ database_id: databaseId });
+  const props: any = db.properties;
+
+  const ids: PropertyIds = {
+    Name: props.Name.id,
+    Description: props.Description.id,
+    URL: props.URL.id,
+    StarredAt: props.StarredAt.id,
+    LatestRelease: props.LatestRelease.id,
+    ReleaseBody: props.ReleaseBody.id,
+    ReleasePublishedAt: props.ReleasePublishedAt.id,
+    LastSyncedAt: props.LastSyncedAt.id,
+  };
+
+  cachedPropertyIds = ids;
+  return ids;
+}
+
 export async function syncRepositoryToNotion(
   notion: Client,
   databaseId: string,
@@ -10,8 +46,10 @@ export async function syncRepositoryToNotion(
   const { repository, release } = repoWithRelease;
   const now = new Date().toISOString();
 
+  const propIds = await getPropertyIds(notion, databaseId);
+
   const properties: any = {
-    Name: {
+    [propIds.Name]: {
       title: [
         {
           text: {
@@ -20,7 +58,7 @@ export async function syncRepositoryToNotion(
         },
       ],
     },
-    Description: {
+    [propIds.Description]: {
       rich_text: [
         {
           text: {
@@ -29,15 +67,15 @@ export async function syncRepositoryToNotion(
         },
       ],
     },
-    URL: {
+    [propIds.URL]: {
       url: repository.html_url,
     },
-    StarredAt: {
+    [propIds.StarredAt]: {
       date: {
         start: repository.starred_at,
       },
     },
-    LatestRelease: {
+    [propIds.LatestRelease]: {
       rich_text: [
         {
           text: {
@@ -46,7 +84,7 @@ export async function syncRepositoryToNotion(
         },
       ],
     },
-    ReleaseBody: {
+    [propIds.ReleaseBody]: {
       rich_text: [
         {
           text: {
@@ -55,7 +93,7 @@ export async function syncRepositoryToNotion(
         },
       ],
     },
-    LastSyncedAt: {
+    [propIds.LastSyncedAt]: {
       date: {
         start: now,
       },
@@ -63,13 +101,11 @@ export async function syncRepositoryToNotion(
   };
 
   if (release?.published_at) {
-    properties.ReleasePublishedAt = {
+    properties[propIds.ReleasePublishedAt] = {
       date: {
         start: release.published_at,
       },
     };
-  } else {
-    properties.ReleasePublishedAt = null;
   }
 
   try {
