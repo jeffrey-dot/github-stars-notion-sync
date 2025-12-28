@@ -106,11 +106,7 @@ export async function syncRepositoryToNotion(
         start: release.published_at,
       },
     };
-  } else if (release) {
-    // Has release but no published_at - skip the property entirely
-    console.log(`   ⚠ Release exists but no published_at for ${repository.full_name}`);
   }
-  // If no release, don't send ReleasePublishedAt property - keeps existing value
 
   try {
     if (existingPageId) {
@@ -144,35 +140,23 @@ export async function batchSyncToNotion(
   notion: Client,
   databaseId: string,
   reposWithReleases: RepositoryWithRelease[],
-  existingPages: Map<string, string>
+  _existingPages: Map<string, string>
 ): Promise<void> {
   console.log(`🔄 Syncing ${reposWithReleases.length} repositories to Notion...`);
 
-  // Skip updates, only create new pages to avoid API validation issues
-  const reposToCreate = reposWithReleases.filter(
-    (r) => !existingPages.has(r.repository.full_name)
-  );
+  const batchSize = 5;
+  for (let i = 0; i < reposWithReleases.length; i += batchSize) {
+    const batch = reposWithReleases.slice(i, i + batchSize);
 
-  if (reposToCreate.length > 0) {
-    const batchSize = 5;
-    for (let i = 0; i < reposToCreate.length; i += batchSize) {
-      const batch = reposToCreate.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map((repoWithRelease) =>
+        syncRepositoryToNotion(notion, databaseId, repoWithRelease, null)
+      )
+    );
 
-      await Promise.all(
-        batch.map((repoWithRelease) =>
-          syncRepositoryToNotion(notion, databaseId, repoWithRelease, null)
-        )
-      );
-
-      if (i + batchSize < reposToCreate.length) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    if (i + batchSize < reposWithReleases.length) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
-  }
-
-  const skipped = reposWithReleases.length - reposToCreate.length;
-  if (skipped > 0) {
-    console.log(`   ○ Skipped ${skipped} existing pages (to avoid update issues)`);
   }
 
   console.log(`✅ Sync complete!`);

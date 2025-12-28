@@ -29,3 +29,39 @@ export async function queryAllPages(
   console.log(`✅ Found ${pages.length} existing pages`);
   return pages;
 }
+
+export async function clearDatabase(
+  notion: Client,
+  databaseId: string
+): Promise<void> {
+  const pages = await queryAllPages(notion, databaseId);
+
+  if (pages.length === 0) {
+    console.log("✅ Database is already empty");
+    return;
+  }
+
+  console.log(`🗑️  Deleting ${pages.length} existing pages...`);
+
+  // Delete in batches of 10
+  const batchSize = 10;
+  for (let i = 0; i < pages.length; i += batchSize) {
+    const batch = pages.slice(i, i + batchSize);
+
+    await Promise.all(
+      batch.map((page) =>
+        notion.pages.update({
+          page_id: page.id,
+          archived: true,
+        })
+      )
+    );
+
+    // Small delay between batches
+    if (i + batchSize < pages.length) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  console.log(`✅ Deleted ${pages.length} pages`);
+}

@@ -3,7 +3,7 @@ import { Client } from "@notionhq/client";
 import { RepositoryWithRelease } from "../types";
 import { fetchStarredRepositories } from "../github/fetchStars";
 import { fetchReleasesForRepositories } from "../github/fetchReleases";
-import { queryAllPages } from "../notion/schema";
+import { clearDatabase } from "../notion/schema";
 import { batchSyncToNotion } from "../notion/database";
 import { checkRateLimit } from "../github/api";
 
@@ -15,6 +15,9 @@ export async function performSync(
   console.log("🚀 Starting GitHub Stars to Notion sync...\n");
 
   await checkRateLimit(octokit);
+
+  // Clear existing pages before sync
+  await clearDatabase(notion, databaseId);
 
   const repositories = await fetchStarredRepositories(octokit);
 
@@ -30,17 +33,8 @@ export async function performSync(
     release: releasesMap.get(repo.full_name) || null,
   }));
 
-  const existingPages = await queryAllPages(notion, databaseId);
-
-  const pageMap = new Map<string, string>();
-  for (const page of existingPages) {
-    const name = page.properties.Name.title[0]?.text.content;
-    if (name) {
-      pageMap.set(name, page.id);
-    }
-  }
-
-  await batchSyncToNotion(notion, databaseId, reposWithReleases, pageMap);
+  // Database is now empty, no need to check existing pages
+  await batchSyncToNotion(notion, databaseId, reposWithReleases, new Map());
 
   await checkRateLimit(octokit);
 

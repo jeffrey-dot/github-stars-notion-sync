@@ -34,7 +34,7 @@ export async function fetchStarredRepositories(
           full_name: repo.full_name,
           description: repo.description,
           html_url: repo.html_url,
-          starred_at: starredItem.starred_at,
+          starred_at: starredItem.starred_at || repo.updated_at,
           language: repo.language,
           stargazers_count: repo.stargazers_count,
           updated_at: repo.updated_at,
