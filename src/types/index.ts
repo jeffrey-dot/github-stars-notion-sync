@@ -25,4 +25,5 @@ export interface GitHubRelease {
 export interface RepositoryWithRelease {
   repository: GitHubRepository;
   release: GitHubRelease | null;
+  descriptionZh?: string; // Chinese translation of description
 }

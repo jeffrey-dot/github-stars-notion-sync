@@ -4,6 +4,7 @@ import { RepositoryWithRelease } from "../types";
 interface PropertyIds {
   Name: string;
   Description: string;
+  DescriptionZh: string;
   URL: string;
   StarredAt: string;
   LatestRelease: string;
@@ -25,6 +26,7 @@ async function getPropertyIds(notion: Client, databaseId: string): Promise<Prope
   const ids: PropertyIds = {
     Name: props.Name.id,
     Description: props.Description.id,
+    DescriptionZh: props.DescriptionZh?.id || null,
     URL: props.URL.id,
     StarredAt: props.StarredAt.id,
     LatestRelease: props.LatestRelease.id,
@@ -43,7 +45,7 @@ export async function syncRepositoryToNotion(
   repoWithRelease: RepositoryWithRelease,
   existingPageId: string | null
 ): Promise<void> {
-  const { repository, release } = repoWithRelease;
+  const { repository, release, descriptionZh } = repoWithRelease;
   const now = new Date().toISOString();
 
   const propIds = await getPropertyIds(notion, databaseId);
@@ -99,6 +101,19 @@ export async function syncRepositoryToNotion(
       },
     },
   };
+
+  // Add Chinese description if the field exists
+  if (propIds.DescriptionZh && descriptionZh) {
+    properties[propIds.DescriptionZh] = {
+      rich_text: [
+        {
+          text: {
+            content: descriptionZh,
+          },
+        },
+      ],
+    };
+  }
 
   if (release?.published_at) {
     properties[propIds.ReleasePublishedAt] = {

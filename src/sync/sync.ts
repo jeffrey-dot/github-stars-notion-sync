@@ -6,6 +6,7 @@ import { fetchReleasesForRepositories } from "../github/fetchReleases";
 import { clearDatabase } from "../notion/schema";
 import { batchSyncToNotion } from "../notion/database";
 import { checkRateLimit } from "../github/api";
+import { translateBatch } from "../translate";
 
 export async function performSync(
   octokit: Octokit,
@@ -28,10 +29,17 @@ export async function performSync(
 
   const releasesMap = await fetchReleasesForRepositories(octokit, repositories);
 
-  const reposWithReleases: RepositoryWithRelease[] = repositories.map((repo) => ({
+  console.log("🌐 Translating descriptions to Chinese...");
+  const descriptions = repositories.map((r) => r.description || "");
+  const translations = await translateBatch(descriptions);
+
+  const reposWithReleases: RepositoryWithRelease[] = repositories.map((repo, index) => ({
     repository: repo,
     release: releasesMap.get(repo.full_name) || null,
+    descriptionZh: translations[index],
   }));
+
+  console.log("✅ Translations complete");
 
   // Database is now empty, no need to check existing pages
   await batchSyncToNotion(notion, databaseId, reposWithReleases, new Map());
