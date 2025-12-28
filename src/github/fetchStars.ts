@@ -26,14 +26,15 @@ export async function fetchStarredRepositories(
       }
 
       for (const item of data) {
-        const repo = item as any;
+        const starredItem = item as any;
+        const repo = starredItem.repo || starredItem;
         repositories.push({
           id: repo.id,
           name: repo.name,
           full_name: repo.full_name,
           description: repo.description,
           html_url: repo.html_url,
-          starred_at: repo.starred_at,
+          starred_at: starredItem.starred_at,
           language: repo.language,
           stargazers_count: repo.stargazers_count,
           updated_at: repo.updated_at,
