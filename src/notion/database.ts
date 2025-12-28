@@ -26,7 +26,7 @@ async function getPropertyIds(notion: Client, databaseId: string): Promise<Prope
   const ids: PropertyIds = {
     Name: props.Name.id,
     Description: props.Description.id,
-    DescriptionZh: props.DescriptionZh?.id || null,
+    DescriptionZh: props["中文描述"]?.id || null,
     URL: props.URL.id,
     StarredAt: props.StarredAt.id,
     LatestRelease: props.LatestRelease.id,
