@@ -26,11 +26,3 @@ export interface RepositoryWithRelease {
   repository: GitHubRepository;
   release: GitHubRelease | null;
 }
-
-// Configuration
-export interface SyncConfig {
-  githubToken: string;
-  notionToken: string;
-  notionDatabaseId: string;
-  githubUsername?: string;
-}

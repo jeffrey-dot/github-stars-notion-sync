@@ -10,14 +10,13 @@ import { checkRateLimit } from "../github/api";
 export async function performSync(
   octokit: Octokit,
   notion: Client,
-  databaseId: string,
-  githubUsername?: string
+  databaseId: string
 ): Promise<void> {
   console.log("🚀 Starting GitHub Stars to Notion sync...\n");
 
   await checkRateLimit(octokit);
 
-  const repositories = await fetchStarredRepositories(octokit, githubUsername);
+  const repositories = await fetchStarredRepositories(octokit);
 
   if (repositories.length === 0) {
     console.log("⚠️  No starred repositories found. Exiting.");

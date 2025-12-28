@@ -2,26 +2,18 @@ import { Octokit } from "octokit";
 import { GitHubRepository } from "../types";
 
 export async function fetchStarredRepositories(
-  octokit: Octokit,
-  username?: string
+  octokit: Octokit
 ): Promise<GitHubRepository[]> {
   const repositories: GitHubRepository[] = [];
   let page = 1;
   const perPage = 100;
   let hasMore = true;
 
-  console.log(
-    `📥 Fetching starred repositories${username ? ` for ${username}` : ""}...`
-  );
+  console.log("📥 Fetching your starred repositories...");
 
   while (hasMore) {
     try {
-      const endpoint = username
-        ? `GET /users/{username}/starred`
-        : `GET /user/starred`;
-
-      const { data } = await octokit.request(endpoint, {
-        username,
+      const { data } = await octokit.request("GET /user/starred", {
         per_page: perPage,
         page,
         sort: "created",
@@ -41,7 +33,7 @@ export async function fetchStarredRepositories(
           full_name: repo.full_name,
           description: repo.description,
           html_url: repo.html_url,
-          starred_at: repo.starred_at || new Date().toISOString(),
+          starred_at: repo.starred_at,
           language: repo.language,
           stargazers_count: repo.stargazers_count,
           updated_at: repo.updated_at,
@@ -56,9 +48,9 @@ export async function fetchStarredRepositories(
       }
     } catch (error: any) {
       if (error.message?.includes("404")) {
-        console.error(`❌ User not found or no starred repositories`);
+        console.error("❌ No starred repositories found");
       } else if (error.message?.includes("403")) {
-        console.error(`❌ Rate limit exceeded or authentication failed`);
+        console.error("❌ Rate limit exceeded or authentication failed");
       }
       throw error;
     }

@@ -106,7 +106,11 @@ export async function syncRepositoryToNotion(
         start: release.published_at,
       },
     };
+  } else if (release) {
+    // Has release but no published_at - skip the property entirely
+    console.log(`   ⚠ Release exists but no published_at for ${repository.full_name}`);
   }
+  // If no release, don't send ReleasePublishedAt property - keeps existing value
 
   try {
     if (existingPageId) {
@@ -144,24 +148,31 @@ export async function batchSyncToNotion(
 ): Promise<void> {
   console.log(`🔄 Syncing ${reposWithReleases.length} repositories to Notion...`);
 
-  const batchSize = 5;
-  for (let i = 0; i < reposWithReleases.length; i += batchSize) {
-    const batch = reposWithReleases.slice(i, i + batchSize);
+  // Skip updates, only create new pages to avoid API validation issues
+  const reposToCreate = reposWithReleases.filter(
+    (r) => !existingPages.has(r.repository.full_name)
+  );
 
-    await Promise.all(
-      batch.map((repoWithRelease) =>
-        syncRepositoryToNotion(
-          notion,
-          databaseId,
-          repoWithRelease,
-          existingPages.get(repoWithRelease.repository.full_name) || null
+  if (reposToCreate.length > 0) {
+    const batchSize = 5;
+    for (let i = 0; i < reposToCreate.length; i += batchSize) {
+      const batch = reposToCreate.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map((repoWithRelease) =>
+          syncRepositoryToNotion(notion, databaseId, repoWithRelease, null)
         )
-      )
-    );
+      );
 
-    if (i + batchSize < reposWithReleases.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (i + batchSize < reposToCreate.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
+  }
+
+  const skipped = reposWithReleases.length - reposToCreate.length;
+  if (skipped > 0) {
+    console.log(`   ○ Skipped ${skipped} existing pages (to avoid update issues)`);
   }
 
   console.log(`✅ Sync complete!`);
