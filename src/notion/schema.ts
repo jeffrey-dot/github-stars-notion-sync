@@ -21,7 +21,9 @@ export async function queryAllPages(
       start_cursor: cursor,
     });
 
-    pages.push(...(response.results as DatabasePage[]));
+    // Filter out archived pages
+    const activePages = (response.results as any[]).filter((page) => !page.archived);
+    pages.push(...activePages);
     hasMore = response.has_more;
     cursor = response.next_cursor ?? undefined;
   }
