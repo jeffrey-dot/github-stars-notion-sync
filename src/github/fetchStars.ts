@@ -18,6 +18,10 @@ export async function fetchStarredRepositories(
         page,
         sort: "created",
         direction: "desc",
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+          "Accept": "application/vnd.github.star+json",
+        },
       });
 
       if (data.length === 0) {
